@@ -1,4 +1,4 @@
-/* global SimpleSchema, FlashNotifications */
+/* global SimpleSchema, FlashNotifications, ValidationError */
 /* global Safe:true */
 /** @namespace */
 Safe = {};
@@ -62,7 +62,7 @@ Safe.validate = function(docOrMod, simpleSchema, options) {
       errors[x.name] = x.message;
     });
 
-    return errors;
+    throw new Safe.ValidationError(errors);
   }
 };
 
@@ -122,19 +122,37 @@ Safe.subscribe = function() {
   return Meteor.subscribe.apply(null, args);
 };
 
+/**
+ * Wraps Meteor.call and logs a notification if there was an error
+ * @param {String} name Name of method to invoke
+ * @param {...*} arguments - @see Meteor.call
+ * @param {Function} callback - usually a Safe.okHandler, but optionally function(e, r)
+ * @returns {*} @see Meteor.call
+ */
+Safe.call = function (name) {
+  // if it's a function, the last argument is the result callback,
+  // not a parameter to the remote method.
+  var args = Array.prototype.slice.call(arguments, 1);
+  if (args.length && typeof args[args.length - 1] === "function") {
+    var callback = args.pop();
+  }
+  try {
+    Meteor.apply(name, args, {throwStubExceptions: true}, callback);
+  }
+  catch(e) {
+    callback(e);
+  }
+};
+
 // POC for the most basic of re-usable method handlers that corresponds to our
 // proposed generic return interface for mutating methods
 if (Meteor.isServer) {
   // On the server we throw when not ok
-  Safe.OkHandler = function(okCb) {
+  Safe.okHandler = function(okCb) {
     return function(e, r) {
       if (e) {
-        Log.error(e.details);
+        console.error(e.details);
         throw e;
-      }
-      else if (!r.ok) {
-        Log.error(r);
-        throw new Meteor.Error(500, "Safe.OkHandler not ok", EJSON.stringify(r));
       }
       else if (_.isFunction(okCb)) {
         okCb(r);
@@ -144,10 +162,15 @@ if (Meteor.isServer) {
 }
 else {
   // On the client use Flash Notifications
-  Safe.OkHandler = function(okCb, template) {
+  Safe.okHandler = function(okCb, template) {
     return function(e, r) {
       var report = function(log, description) {
-        Log.error(log);
+        if (log) {
+          console.error(log);
+        }
+        if (description) {
+          console.error(description);
+        }
         FlashNotifications.add({
           title: "Operation Failed",
           description: description,
@@ -156,20 +179,20 @@ else {
         });
       };
 
-      if (e) {
-        report(e, e.reason + ", " + e.details);
-      }
-      else if (r.errors) {
+      if (e instanceof Safe.ValidationError) {
         // If a template is passed in, use it's error mechanism
         if (template && _.isFunction(template.onError)) {
-          template.onError(r.errors);
+          template.onError(e.details);
         }
         else {
-          report(r.errors, "Validation error");
+          report(e.details, "Validation error");
         }
       }
-      else if (!r.ok) {
-        report(r, "Bad result");
+      else if (e instanceof Match.Error) {
+        report("Match Failed", "Validation error");
+      }
+      else if (e) {
+        report(e, e.reason + ", " + e.details);
       }
       else if (_.isFunction(okCb)) {
         okCb(r);
@@ -195,6 +218,12 @@ Safe.Match.WhitelistedObject = function(allowedKeys) {
 
     check(x, schema);
     return true;
+  });
+};
+
+Safe.Match.RegEx = function(exp) {
+  return Match.Where(function(x) {
+    return x.match(exp);
   });
 };
 

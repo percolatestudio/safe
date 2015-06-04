@@ -12,3 +12,7 @@ Safe.NotFoundError = function(details, reason) {
 };
 
 Safe.NotFoundError.prototype = new Meteor.Error();
+
+Safe.ValidationError = function(details, reason) {
+  Meteor.Error.call(this, 400, reason || "Validation Error", details);
+};
