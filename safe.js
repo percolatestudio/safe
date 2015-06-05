@@ -59,7 +59,7 @@ Safe.validate = function(docOrMod, simpleSchema, options) {
     var errors = {};
 
     _.each(options.context.getErrorObject().invalidKeys, function(x) {
-      errors[x.name] = x.message;
+      errors[x.name] = x;
     });
 
     throw new Safe.ValidationError(errors);
@@ -162,7 +162,12 @@ if (Meteor.isServer) {
 }
 else {
   // On the client use Flash Notifications
-  Safe.okHandler = function(okCb, template) {
+  Safe.okHandler = function(errors, okCb) {
+    if (_.isFunction(errors)) {
+      okCb = errors;
+      errors = null;
+    }
+
     return function(e, r) {
       var report = function(log, description) {
         if (log) {
@@ -179,10 +184,14 @@ else {
         });
       };
 
-      if (e instanceof Safe.ValidationError) {
-        // If a template is passed in, use it's error mechanism
-        if (template && _.isFunction(template.onError)) {
-          template.onError(e.details);
+      if (!e) {
+        if (_.isFunction(okCb)) {
+          okCb(r);
+        }
+      }
+      else if (e.error === "validation-failed") {
+        if (errors) {
+          errors.addInvalidKeys(_.values(e.details));
         }
         else {
           report(e.details, "Validation error");
@@ -191,11 +200,8 @@ else {
       else if (e instanceof Match.Error) {
         report("Match Failed", "Validation error");
       }
-      else if (e) {
+      else {
         report(e, e.reason + ", " + e.details);
-      }
-      else if (_.isFunction(okCb)) {
-        okCb(r);
       }
     };
   };

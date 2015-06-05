@@ -16,3 +16,6 @@ Safe.NotFoundError.prototype = new Meteor.Error();
 Safe.ValidationError = function(details, reason) {
   Meteor.Error.call(this, "validation-failed", reason || "Validation Error", details);
 };
+
+Safe.ValidationError.prototype = new Meteor.Error();
+
