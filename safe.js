@@ -201,7 +201,11 @@ else {
         report("Match Failed", "Validation error");
       }
       else {
-        report(e, e.reason + ", " + e.details);
+        var message = e.reason;
+        if (e.details) {
+          message += ", " + e.details;
+        }
+        report(e, message);
       }
     };
   };
