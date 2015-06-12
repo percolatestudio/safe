@@ -237,6 +237,17 @@ Safe.Match.RegEx = function(exp) {
   });
 };
 
+// Optional but `undefined` is allowed
+Safe.Match.TemplateOptional = function(pattern) {
+  return Match.Optional(Match.Where(function (x) {
+    if (_.isUndefined(x)) {
+      return true;
+    }
+    check(x, pattern);
+    return true;
+  }));
+};
+
 Safe.SimpleSchema = {
   RegEx: {
     // Old id's we have lying around for some imported data that contain 0's
