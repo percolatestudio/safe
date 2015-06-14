@@ -191,6 +191,7 @@ else {
       }
       else if (e.error === "validation-failed") {
         if (errors) {
+          console.log("Fields with errors:", e.details);
           errors.addInvalidKeys(_.values(e.details));
         }
         else {
