@@ -191,12 +191,10 @@ else {
       }
       else if (e.error === "validation-failed") {
         if (errors) {
-          console.log("Fields with errors:", e.details);
           errors.addInvalidKeys(_.values(e.details));
         }
-        else {
-          report(e.details, "Validation error");
-        }
+
+        report(e.details, "Validation error");
       }
       else if (e instanceof Match.Error) {
         report("Match Failed", "Validation error");
