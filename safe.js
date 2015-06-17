@@ -1,4 +1,4 @@
-/* global SimpleSchema, FlashNotifications, ValidationError */
+/* global SimpleSchema, FlashNotifications, ValidationError, console */
 /* global Safe:true */
 /** @namespace */
 Safe = {};
@@ -151,7 +151,9 @@ if (Meteor.isServer) {
   Safe.okHandler = function(okCb) {
     return function(e, r) {
       if (e) {
+        /* eslint-disable no-console */
         console.error(e.details);
+        /* eslint-enable no-console */
         throw e;
       }
       else if (_.isFunction(okCb)) {
@@ -169,15 +171,18 @@ else {
     }
 
     return function(e, r) {
-      var report = function(log, description) {
+      var report = function(log, description, title) {
+        title = title || "Operation Failed";
+        /* eslint-disable no-console */
         if (log) {
           console.error(log);
         }
         if (description) {
           console.error(description);
         }
+        /* eslint-enable no-console */
         FlashNotifications.add({
-          title: "Operation Failed",
+          title: title,
           description: description,
           icon: "alert",
           feeling: "negative"
@@ -195,7 +200,9 @@ else {
           errors.addInvalidKeys(_.values(e.details));
         }
 
-        report(e.details, "Validation error");
+        var count = _.keys(e.details).length;
+        var details = count + " form " + (count !== 1 ? "errors" : "error") + ", please review";
+        report(e.details, details, "Validation Error");
       }
       else if (e instanceof Match.Error) {
         report("Match Failed", "Validation error");
