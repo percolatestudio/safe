@@ -66,7 +66,8 @@ Safe.validate = function(docOrMod, simpleSchema, options) {
     });
 
     if (options.logErrors) {
-      console.error("Validation Errors:", errors);
+      Log.error("Validation Errors:");
+      Log.error(errors);
     }
 
     throw new Safe.ValidationError(errors);
