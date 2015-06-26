@@ -8,8 +8,9 @@ Safe = {};
  * @param {Object} docOrMod - The document or modifier to use.
  * @param {SimpleSchema} simpleSchema - The SS to use for validation.
  * @param {Object} options - Options.
- * @returns {(Object|undefined)} An error object like {fieldName: errorString}
- *   or undefined if the document validates.
+ * @throws An error object with deails like {fieldName: errorString}
+ *  when validation fails.
+ * @returns {undefined} If the document validates.
  */
 Safe.validate = function(docOrMod, simpleSchema, options) {
   check(docOrMod, Object);
@@ -17,14 +18,16 @@ Safe.validate = function(docOrMod, simpleSchema, options) {
 
   options = _.extend({
     isModifier: false,
-    context: simpleSchema.newContext()
+    context: simpleSchema.newContext(),
+    logErrors: false
   }, options);
 
   check(options, {
     // Is docOrMod a modifier?
     isModifier: Boolean,
     // SimpleSchemaValidationContext (SS doesn't export the symbol)
-    context: simpleSchema.newContext().constructor
+    context: simpleSchema.newContext().constructor,
+    logErrors: Boolean
   });
 
   // If the schema includes a 'prepare' hook, run it.
@@ -61,6 +64,10 @@ Safe.validate = function(docOrMod, simpleSchema, options) {
     _.each(options.context.getErrorObject().invalidKeys, function(x) {
       errors[x.name] = x;
     });
+
+    if (options.logErrors) {
+      console.error("Validation Errors:", errors);
+    }
 
     throw new Safe.ValidationError(errors);
   }
