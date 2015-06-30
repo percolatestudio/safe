@@ -216,7 +216,7 @@ else {
         report("Match Failed", "Validation error");
       }
       else {
-        var message = e.reason;
+        var message = e.reason || "";
         if (e.details) {
           message += ", " + e.details;
         }
