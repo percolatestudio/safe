@@ -305,6 +305,9 @@ Safe.SimpleSchema = {
         // resource path
         + "(?:/\\S*)?"
       + "$", "i"
-    )
+    ),
+
+    // Stricter version than is included with SimpleSchema
+    Email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+\/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]{2,}(?:[a-z0-9-]*[a-z0-9])?$/i
   }
 };
